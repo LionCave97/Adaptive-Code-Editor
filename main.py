@@ -6,15 +6,16 @@ from PySide6.QtCore import Qt, QDir
 
 import openai
 
-openai.api_key = "YOUR_OPENAI_API_KEY"
 
 def get_gpt_response(prompt):
     response = openai.Completion.create(
         engine="text-davinci-003",  # Choose an appropriate engine
         prompt=prompt,
-        max_tokens=100  # Adjust as needed
+        max_tokens=4000  # Adjust as needed
     )
     return response.choices[0].text.strip()
+
+
 
 
 class CodeEditor(QMainWindow):
@@ -107,13 +108,27 @@ class CodeEditor(QMainWindow):
         else:
             self.setStyleSheet("background-color: #FFF; color: #000;")
 
+    def stream_gpt_response(self, prompt):
+        response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=100,
+        stream=True
+    )
+        for chunk in response:
+            print(chunk.choices)
+            if isinstance(chunk, dict) and 'text' in chunk:
+                print(chunk)
+                self.terminal_widget.append(chunk['text'])
+
+
+
     def execute_command(self):
         command = self.terminal_input.text()
 
         if command.startswith("gpt:"):
             gpt_input = command[len("gpt:"):]
-            gpt_response = get_gpt_response(gpt_input)
-            self.terminal_widget.append(f"> GPT: {gpt_response}")
+            self.stream_gpt_response(gpt_input)
         else:
             self.terminal_widget.append(f"> {command}")
             # You can implement command execution here and append the output to the terminal
