@@ -46,63 +46,66 @@ class UserJourneyWindow(QMainWindow):
         self.proceed_button = QPushButton("Proceed")
         self.proceed_button.clicked.connect(self.proceed_user_journey)
         layout.addWidget(self.proceed_button)
+
         self.chat_history = []
+        self.responses = {}  # Store user responses
+
         central_widget.setLayout(layout)
+
+        # Display the initial message
+        self.chat_widget.append("Welcome to the Code Editor!\nHow can I assist you today?")
 
         self.setup_user_journey()
 
     def setup_user_journey(self):
         self.user_journey = [
-            ("Welcome to the Code Editor!", "How can I assist you today?\n1. Open a folder\n2. Set up a new project"),
-            ("Select an option:", "1. Open a folder\n2. Set up a new project"),
-            ("Open a Folder", "Please select the folder you want to open."),
-            ("Set Up New Project", "Let's set up a new project! What's the project name?"),
-            # ... Add more steps as needed
+            ("Project Goals", "What are your project goals?"),
+            ("Tech Stack", "Which technologies will you use?"),
+            ("Scope", "Briefly describe the project's scope."),
+            ("Challenges", "Are there any anticipated challenges?"),
+            ("Skill Level", "On a scale of 1 to 5, how would you rate your development skills (1 being beginner, 5 being expert)?"),
         ]
         self.current_journey_step = 0
 
-        # self.update_chat_widget()
-
     def proceed_user_journey(self):
         if self.current_journey_step < len(self.user_journey):
-            _, response = self.user_journey[self.current_journey_step]
+            step_title, step_question = self.user_journey[self.current_journey_step]
             input_text = self.input_field.text()  # Get user input
             self.chat_history.append(f"> You: {input_text}")
-            self.chat_history.append(f"> Assistant: {response}")
+            self.chat_history.append(f"> Assistant ({step_title}): {step_question}")
+
+            # Store user response in the responses dictionary
+            self.responses[step_title] = input_text
+
             self.current_journey_step += 1
+            self.input_field.clear()
             self.update_chat_widget()
 
             if self.current_journey_step == len(self.user_journey):
-                self.user_journey_completed()
-                self.open_code_editor(input_text)  
+                self.open_code_editor()
 
-    def open_code_editor(self, project_name):
+
+    def update_chat_widget(self):
+        # Clear and update the chat_widget with chat_history
+        self.chat_widget.clear()
+        self.chat_widget.append("\n".join(self.chat_history))
+
+    # ... Other methods
+
+
+    def open_code_editor(self):
         self.close()  # Close the user journey window
-        self.code_editor_window = CodeEditor(project_name)
+        project_name = self.responses.get("Set Up New Project", "MyProject")  # Get project name (default to "MyProject")
+        project_goals = self.responses.get("Project Goals", "")
+        tech_stack = self.responses.get("Tech Stack", "")
+        scope = self.responses.get("Scope", "")
+        challenges = self.responses.get("Challenges", "")
+        skill_level = self.responses.get("Skill Level", "")
+
+        # Pass the collected information to your CodeEditor class and set up the UI
+        self.code_editor_window = CodeEditor()
+        self.code_editor_window.generate_code_and_setup_ui(project_name, project_goals, tech_stack, scope, challenges, skill_level)
         self.code_editor_window.show()
-        
-    def next_step(self):
-        self.current_step += 1
-        if self.current_step < len(self.steps):
-            assistant_response = self.get_gpt_response(self.steps[self.current_step][1])
-            self.steps[self.current_step] = (self.steps[self.current_step][0], assistant_response)
-            self.text_widget.setPlainText(assistant_response)
-            self.next_button.setText("Next")
-        else:
-            self.close()  # Close the user journey window
-            self.open_main_code_editor()
-
-    def get_gpt_response(self, prompt):
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
-            max_tokens=100
-        )
-        return response.choices[0].text.strip()
-
-    def open_main_code_editor(self):
-        self.main_code_editor = CodeEditor()
-        self.main_code_editor.show()
 
     def set_dark_mode(self):
         self.setStyleSheet("""
@@ -155,6 +158,7 @@ class UserJourneyWindow(QMainWindow):
 
 
 
+
 class CodeEditor(QMainWindow):
 
     def __init__(self):
@@ -165,13 +169,44 @@ class CodeEditor(QMainWindow):
 
         self.init_ui()
         
+    def generate_code_and_setup_ui(self, project_name, project_goals, tech_stack, scope, challenges, skill_level):
+        # Store the provided information as instance variables
+        self.project_name = project_name
+        self.project_goals = project_goals
+        self.tech_stack = tech_stack
+        self.scope = scope
+        self.challenges = challenges
+        self.skill_level = skill_level
 
-        self.setup_user_journey()
+        # Generate code based on user input and stored information
+        user_input = self.collect_user_input()  # Implement a method to collect user input
+        generated_code = self.generate_code(user_input)
+
+        # Set up UI elements based on the generated code
+        self.setup_ui_elements(generated_code)
+
+    def generate_code(self, user_input):
+        # Access other required parameters from instance variables
+        project_name = self.project_name
+        project_goals = self.project_goals
+        tech_stack = self.tech_stack
+        scope = self.scope
+        challenges = self.challenges
+        skill_level = self.skill_level
+
+    def setup_ui_elements(self, generated_code):
+        # Set up UI elements based on the generated code
+        # Finally, you can display the generated code in your code editor
+        self.code_editor.setPlainText(generated_code)
+        # self.setup_user_journey()
 
     def update_chat_widget(self):
         self.chat_widget.setPlainText("\n".join(self.chat_history))
 
-    
+    def collect_user_input(self):
+        # Implement a method to collect user input or use a stored user response
+        # For example, you can return a sample user input for testing purposes
+        return "Sample user input"
 
     def proceed_user_journey(self, input_text):
         if self.current_journey_step < len(self.user_journey):
@@ -421,10 +456,13 @@ class CodeEditor(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    # window = CodeEditor()
+    # window.show()
 
     user_journey_window = UserJourneyWindow()
     user_journey_window.show()
-    sys.exit(app.exec_())
+    
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()
