@@ -28,7 +28,7 @@ class UserJourneyWindow(QMainWindow):
 
         self.layout.addWidget(QLabel("Which Languages will you use?"))
         self.language_group = QButtonGroup()
-        self.languages = ["Python", "React", "HTML/CSS/JS"]
+        self.languages = ["Python", "HTML/CSS/JS"]
         for language in self.languages:
             btn = QRadioButton(language)
             self.language_group.addButton(btn)
@@ -49,23 +49,42 @@ class UserJourneyWindow(QMainWindow):
         self.submit_button.clicked.connect(self.submit)
         self.layout.addWidget(self.submit_button)
 
+        self.open_editor_button = QPushButton("Open Editor")
+        self.open_editor_button.clicked.connect(self.open_editor)
+        self.layout.addWidget(self.open_editor_button)
+
+
         self.setLayout(self.layout)
+
+    def open_editor(self):
+        # Create an instance of the CodeEditor class
+        self.code_editor = CodeEditor(self)
+        self.code_editor.show()    
+        self.close()
+
 
     def submit(self):
         project_goals = self.project_goals_input.text()
-        language = self.languages[self.language_group.checkedId()]
+        language_id = self.language_group.checkedId()
+        if language_id == -1:
+            print("No language selected")
+            return
+        language = self.languages[language_id]
         project_scope = self.project_scope_input.text()
         skill_level = self.skill_level_group.checkedId()
 
-        generated_code = code_gen.generate_code(project_goals, language, project_scope, skill_level)
+    # Rest of your code...
 
-        # Handle the generated code
-        # For example, you can print it to the console for now
-        print(generated_code)
+        # generated_code = code_gen.generate_new_code(project_goals, language, project_scope, skill_level)
+
+        # # Handle the generated code
+        # # For example, you can print it to the console for now
+        # print(generated_code)
 
         # Pass these values to the code generator
         # code_gen.generate_code(project_goals, language, project_scope, skill_level)
-        generated_code_path = code_gen.generate_code(project_goals, language, project_scope, skill_level)
+        generated_code_path = code_gen.generate_new_code(project_goals, language, project_scope, skill_level)
+        print(generated_code_path)
 
         # Create an instance of the CodeEditor class and pass the path of the generated code
         self.code_editor = CodeEditor(self, generated_code_path)

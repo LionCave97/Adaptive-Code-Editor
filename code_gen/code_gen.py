@@ -136,27 +136,42 @@ class code_gen():
             logger.error(f"Error in code generation: {traceback.format_exc()}")
         
 
-    def generate_code(project_goals, language, project_scope, skill_level):
+    def generate_new_code(project_goals, language, project_scope, skill_level):
         # Initialize the LangChain model
         open_ai_llm = OpenAI(temperature=0.7, max_tokens=1000)
-        memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
+        memory = ConversationBufferMemory(input_key='project_goals', memory_key='chat_history')
 
         # Create a prompt that describes the code you want to generate
-        prompt = f"Create a {language} project with the following goals: {project_goals}. The project should have a scope of {project_scope} and be suitable for a skill level of {skill_level}."
+        prompt = f"Create a {language} project with the following goals: {project_goals}. The project should have a scope of {project_scope} and be suitable for a skill level of {skill_level}. You need to write the base code needed for this project."
 
         # Create a PromptTemplate and LLMChain
-        code_template = PromptTemplate(input_variables=[], template=prompt)  # Remove 'code_topic' from input_variables
+        code_template = PromptTemplate(input_variables=[], template=prompt)
         code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
 
         # Generate the code
-        generated_code = code_chain.run(prompt)
+        generated_code = code_chain.run({'project_goals': project_goals})  # Pass a dictionary to the run method
 
         # Ask the user for a directory to save the generated code
         folder_path = QFileDialog.getExistingDirectory(None, "Select Folder")
 
-        # Save the generated code to a file in the selected directory
-        file_path = f"{folder_path}/generated_code.txt"
-        with open(file_path, 'w') as file:
-            file.write(generated_code)
+        if language.lower() == "html/css/js":
+            # Create separate files for HTML, CSS, and JS
+            html_file_path = f"{folder_path}/index.html"
+            css_file_path = f"{folder_path}/styles.css"
+            js_file_path = f"{folder_path}/script.js"
 
-        return file_path
+            with open(html_file_path, 'w') as file:
+                file.write("<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n<script src='script.js'></script>\n</body>\n</html>")
+            with open(css_file_path, 'w') as file:
+                file.write("/* Add your CSS here */")
+            with open(js_file_path, 'w') as file:
+                file.write("// Add your JavaScript here")
+
+            return [html_file_path, css_file_path, js_file_path]
+        else:
+            # Save the generated code to a file in the selected directory
+            file_path = f"{folder_path}/main.py"
+            with open(file_path, 'w') as file:
+                file.write(generated_code)
+
+            return file_path

@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QProcess
 
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QVBoxLayout, QWidget, QDockWidget, QTreeView, QTextEdit, QLineEdit, QFileDialog, QMenuBar, QPushButton, QFileSystemModel
@@ -23,20 +24,21 @@ def get_gpt_response(prompt):
 
 class CodeEditor(QMainWindow):
 
-    def __init__(self, user_journey_window, file_path):
+    def __init__(self, user_journey_window, file_path=None):
         super().__init__()
 
         self.user_journey_window = user_journey_window
 
 
-        self.is_dark_theme = True
-        self.set_dark_theme()
+        self.is_dark_theme = False
+        # self.set_dark_theme()
 
         self.init_ui()
         
         # Open the file and set its content to the code editor
-        with open(file_path, 'r') as file:
-            self.code_editor.setPlainText(file.read())
+        if file_path is not None:
+            with open(file_path, 'r') as file:
+                self.code_editor.setPlainText(file.read())
 
         
 
@@ -147,6 +149,21 @@ class CodeEditor(QMainWindow):
         clear_terminal_action.triggered.connect(self.clear_terminal)
         view_menu.addAction(clear_terminal_action)
 
+        templates_menu = menubar.addMenu("Templates")
+
+        beginner_template_action = QAction("Beginner Template", self)
+        beginner_template_action.triggered.connect(self.load_beginner_template)
+        templates_menu.addAction(beginner_template_action)
+
+        moderate_template_action = QAction("Moderate Template", self)
+        moderate_template_action.triggered.connect(self.load_moderate_template)
+        templates_menu.addAction(moderate_template_action)
+
+        advanced_template_action = QAction("Advanced Template", self)
+        advanced_template_action.triggered.connect(self.load_advanced_template)
+        templates_menu.addAction(advanced_template_action)
+
+
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
 
@@ -185,11 +202,18 @@ class CodeEditor(QMainWindow):
 
         self.central_widget.setLayout(self.layout)
 
-        self.chat_history = []
-        # Chat Window
-        self.chat_widget = QTextEdit()
-        self.chat_widget.setReadOnly(True)
-        self.layout.addWidget(self.chat_widget)
+    def load_beginner_template(self):
+        # Load the beginner template into the code editor
+        self.code_editor.setPlainText("Beginner template code...")
+        self.file_nav.hide()
+
+    def load_moderate_template(self):
+        # Load the moderate template into the code editor
+        self.code_editor.setPlainText("Moderate template code...")
+
+    def load_advanced_template(self):
+        # Load the advanced template into the code editor
+        self.code_editor.setPlainText("Advanced template code...")
     
     def clear_terminal(self):
         self.terminal_widget.clear()
