@@ -1,136 +1,74 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton, QRadioButton, QButtonGroup, QLabel
+from PySide6.QtCore import Qt, Signal
+
+from windows.code_editor import CodeEditor
+from code_gen.code_gen import code_gen
 
 from windows.code_editor import CodeEditor
 
 class UserJourneyWindow(QMainWindow):
+    code_generated = Signal(str)
 
     def __init__(self):
         super().__init__()
         self.init_ui()
+        self.code_editor = None  # Add this line
+
 
     def init_ui(self):
-        self.setWindowTitle("User Journey - Code Editor Setup")
-        self.setGeometry(100, 100, 800, 600)
-        self.set_dark_mode()
+        self.central_widget = QWidget()  # Create a central widget
+        self.setCentralWidget(self.central_widget)  # Set the central widget
 
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-
-        layout = QVBoxLayout()
-
-        self.chat_widget = QTextEdit()
-        self.chat_widget.setReadOnly(True)
-        layout.addWidget(self.chat_widget)
-
-        self.input_field = QLineEdit()
-        layout.addWidget(self.input_field)
-
-        self.proceed_button = QPushButton("Proceed")
-        self.proceed_button.clicked.connect(self.proceed_user_journey)
-        layout.addWidget(self.proceed_button)
-
-        central_widget.setLayout(layout)
-
-        self.setup_user_journey()
-
-    def setup_user_journey(self):
-        self.user_journey = [
-            ("Project Goals", "What are your project goals?"),
-            ("Tech Stack", "Which technologies will you use?"),
-            ("Scope", "Briefly describe the project's scope."),
-            ("Challenges", "Are there any anticipated challenges?"),
-            ("Skill Level", "On a scale of 1 to 5, how would you rate your development skills (1 being beginner, 5 being expert)?"),
-        ]
-        self.current_journey_step = 0
-        self.display_next_question()
-
-    def display_next_question(self):
-        if self.current_journey_step < len(self.user_journey):
-            _, step_question = self.user_journey[self.current_journey_step]
-            self.chat_widget.append(f"> Assistant: {step_question}")
-
-    def proceed_user_journey(self):
-        if self.current_journey_step < len(self.user_journey):
-            input_text = self.input_field.text()  # Get user input
-            self.chat_widget.append(f"> You: {input_text}")
-            self.current_journey_step += 1
-            self.input_field.clear()
-            self.display_next_question()
-
-            if self.current_journey_step == len(self.user_journey):
-                self.open_code_editor()
+        self.layout = QVBoxLayout(self.central_widget)  # Add the layout to the central widget
 
 
-    def update_chat_widget(self):
-        # Clear and update the chat_widget with chat_history
-        self.chat_widget.clear()
-        self.chat_widget.append("\n".join(self.chat_history))
+        self.project_goals_input = QLineEdit()
+        self.layout.addWidget(QLabel("What are your project goals?"))
+        self.layout.addWidget(self.project_goals_input)
 
-    # ... Other methods
+        self.layout.addWidget(QLabel("Which Languages will you use?"))
+        self.language_group = QButtonGroup()
+        self.languages = ["Python", "React", "HTML/CSS/JS"]
+        for language in self.languages:
+            btn = QRadioButton(language)
+            self.language_group.addButton(btn)
+            self.layout.addWidget(btn)
 
+        self.project_scope_input = QLineEdit()
+        self.layout.addWidget(QLabel("Briefly describe the project Scope"))
+        self.layout.addWidget(self.project_scope_input)
 
-    def open_code_editor(self):
-        # project_name = self.responses.get("Set Up New Project", "MyProject")  # Get project name (default to "MyProject")
-        # project_goals = self.responses.get("Project Goals", "")
-        # tech_stack = self.responses.get("Tech Stack", "")
-        # scope = self.responses.get("Scope", "")
-        # challenges = self.responses.get("Challenges", "")
-        # skill_level = self.responses.get("Skill Level", "")
+        self.layout.addWidget(QLabel("What is your skill level:"))
+        self.skill_level_group = QButtonGroup()
+        for i in range(1, 6):
+            btn = QRadioButton(str(i))
+            self.skill_level_group.addButton(btn)
+            self.layout.addWidget(btn)
 
-        # # Pass the collected information to your CodeEditor class and set up the UI
-        # self.code_editor_window = CodeEditor()
-        # self.code_editor_window.generate_code_and_setup_ui(project_name, project_goals, tech_stack, scope, challenges, skill_level)
-        window = CodeEditor()
-        window.show()
-        self.close()  # Close the user journey window
+        self.submit_button = QPushButton("Submit")
+        self.submit_button.clicked.connect(self.submit)
+        self.layout.addWidget(self.submit_button)
 
+        self.setLayout(self.layout)
 
-    def set_dark_mode(self):
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QDockWidget {
-                background-color: #252526;
-                color: #d4d4d4;
-                border: 1px solid #181818;
-            }
-            QTreeView {
-                background-color: #252526;
-                color: #d4d4d4;
-                border: none;
-            }
-            QTextEdit, QPlainTextEdit, QLineEdit {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-                border: 1px solid #181818;
-                selection-color: #ffffff;
-                selection-background-color: #264f78;
-            }
-            QMenuBar {
-                background-color: #333;
-                color: #ffffff;
-            }
-            QMenuBar::item {
-                background-color: transparent;
-                padding: 4px 10px;
-            }
-            QMenuBar::item:selected {
-                background-color: #555;
-            }
-            QMenu {
-                background-color: #333;
-                color: #ffffff;
-            }
-            QMenu::item {
-                padding: 6px 20px;
-            }
-            QMenu::item:selected {
-                background-color: #555;
-            }
-            QTreeView::item {
-                border: none;
-            }
-        """)
+    def submit(self):
+        project_goals = self.project_goals_input.text()
+        language = self.languages[self.language_group.checkedId()]
+        project_scope = self.project_scope_input.text()
+        skill_level = self.skill_level_group.checkedId()
+
+        generated_code = code_gen.generate_code(project_goals, language, project_scope, skill_level)
+
+        # Handle the generated code
+        # For example, you can print it to the console for now
+        print(generated_code)
+
+        # Pass these values to the code generator
+        # code_gen.generate_code(project_goals, language, project_scope, skill_level)
+        generated_code_path = code_gen.generate_code(project_goals, language, project_scope, skill_level)
+
+        # Create an instance of the CodeEditor class and pass the path of the generated code
+        self.code_editor = CodeEditor(self, generated_code_path)
+        self.code_editor.show()
+        self.close()
+        

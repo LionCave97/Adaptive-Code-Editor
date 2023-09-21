@@ -17,6 +17,8 @@ import openai
 
 from pydantic import BaseModel
 
+from PySide6.QtWidgets import QFileDialog
+
 os.environ["OPENAI_API_KEY"] = "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"
 openai.api_key = "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"
 
@@ -132,3 +134,29 @@ class code_gen():
         except Exception as e:
             
             logger.error(f"Error in code generation: {traceback.format_exc()}")
+        
+
+    def generate_code(project_goals, language, project_scope, skill_level):
+        # Initialize the LangChain model
+        open_ai_llm = OpenAI(temperature=0.7, max_tokens=1000)
+        memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
+
+        # Create a prompt that describes the code you want to generate
+        prompt = f"Create a {language} project with the following goals: {project_goals}. The project should have a scope of {project_scope} and be suitable for a skill level of {skill_level}."
+
+        # Create a PromptTemplate and LLMChain
+        code_template = PromptTemplate(input_variables=[], template=prompt)  # Remove 'code_topic' from input_variables
+        code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
+
+        # Generate the code
+        generated_code = code_chain.run(prompt)
+
+        # Ask the user for a directory to save the generated code
+        folder_path = QFileDialog.getExistingDirectory(None, "Select Folder")
+
+        # Save the generated code to a file in the selected directory
+        file_path = f"{folder_path}/generated_code.txt"
+        with open(file_path, 'w') as file:
+            file.write(generated_code)
+
+        return file_path

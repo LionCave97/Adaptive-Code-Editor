@@ -23,28 +23,49 @@ def get_gpt_response(prompt):
 
 class CodeEditor(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, user_journey_window, file_path):
         super().__init__()
+
+        self.user_journey_window = user_journey_window
+
 
         self.is_dark_theme = True
         self.set_dark_theme()
 
         self.init_ui()
         
-    def generate_code_and_setup_ui(self, project_name, project_goals, tech_stack, scope, challenges, skill_level):
-        # Store the provided information as instance variables
-        self.project_name = project_name
-        self.project_goals = project_goals
-        self.tech_stack = tech_stack
-        self.scope = scope
-        self.challenges = challenges
-        self.skill_level = skill_level
+        # Open the file and set its content to the code editor
+        with open(file_path, 'r') as file:
+            self.code_editor.setPlainText(file.read())
 
-        # Generate code based on user input and stored information
-        user_input = self.collect_user_input()  # Implement a method to collect user input
+        
+
+    def collect_user_input(self):
+        # Get the user input from the UserJourneyWindow
+        project_goals = self.user_journey_window.project_goals
+        language = self.user_journey_window.language
+        project_scope = self.user_journey_window.project_scope
+        skill_level = self.user_journey_window.skill_level
+
+        # Return a dictionary of the user input
+        return {
+            "project_goals": project_goals,
+            "language": language,
+            "project_scope": project_scope,
+            "skill_level": skill_level,
+        }
+        
+    def generate_code_and_setup_ui(self):
+        user_input = self.collect_user_input()
+
+        project_name = user_input["project_goals"]
+        project_goals = user_input["project_goals"]
+        tech_stack = user_input["language"]
+        scope = user_input["project_scope"]
+        challenges = ""  # You can modify this as needed
+        skill_level = user_input["skill_level"]
+
         generated_code = self.generate_code(user_input)
-
-        # Set up UI elements based on the generated code
         self.setup_ui_elements(generated_code)
 
     def generate_code(self, user_input):
