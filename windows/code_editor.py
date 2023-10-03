@@ -29,9 +29,7 @@ class CodeEditor(QMainWindow):
 
         self.user_journey_window = user_journey_window
 
-
         self.is_dark_theme = False
-        # self.set_dark_theme()
 
         self.init_ui()
         
@@ -108,7 +106,6 @@ class CodeEditor(QMainWindow):
         self.chat_history.append("> Assistant: User journey completed!")
         self.update_chat_widget()
 
-    # ...
 
     def execute_command(self):
         command = self.terminal_input.text()
@@ -257,58 +254,13 @@ class CodeEditor(QMainWindow):
         self.is_dark_theme = not self.is_dark_theme
         if self.is_dark_theme:
             # self.setStyleSheet("background-color: #222; color: #FFF;")
-            self.set_dark_theme()
+            # self.set_dark_theme()
+            QApplication.instance().setStyle("Fusion")
+
         else:
-            self.setStyleSheet("background-color: #FFF; color: #000;")
-    
-    def set_dark_theme(self):
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            QDockWidget {
-                background-color: #252526;
-                color: #d4d4d4;
-                border: 1px solid #181818;
-            }
-            QTreeView {
-                background-color: #252526;
-                color: #d4d4d4;
-                border: none;
-            }
-            QTextEdit, QPlainTextEdit, QLineEdit {
-                background-color: #1e1e1e;
-                color: #d4d4d4;
-                border: 1px solid #181818;
-                selection-color: #ffffff;
-                selection-background-color: #264f78;
-            }
-            QMenuBar {
-                background-color: #333;
-                color: #ffffff;
-            }
-            QMenuBar::item {
-                background-color: transparent;
-                padding: 4px 10px;
-            }
-            QMenuBar::item:selected {
-                background-color: #555;
-            }
-            QMenu {
-                background-color: #333;
-                color: #ffffff;
-            }
-            QMenu::item {
-                padding: 6px 20px;
-            }
-            QMenu::item:selected {
-                background-color: #555;
-            }
-            QTreeView::item {
-                border: none;
-            }
-        """)
+            # self.setStyleSheet("background-color: #FFF; color: #000;")
+            QApplication.instance().setStyle("Breeze")
+
 
     def stream_gpt_response(self, prompt):
         response = openai.Completion.create(

@@ -20,18 +20,16 @@ def format(color, style=''):
 
     return _format
 
-
-# Syntax styles that can be shared by all languages
 STYLES = {
-    'keyword': format('blue'),
-    'operator': format('red'),
-    'brace': format('darkGray'),
-    'defclass': format('black', 'bold'),
-    'string': format('magenta'),
-    'string2': format('darkMagenta'),
-    'comment': format('darkGreen', 'italic'),
-    'self': format('black', 'italic'),
-    'numbers': format('brown'),
+    'keyword': format('cyan'),
+    'operator': format('yellow'),
+    'brace': format('white'),
+    'defclass': format('lightGray', 'bold'),
+    'string': format('lightMagenta'),
+    'string2': format('magenta'),
+    'comment': format('lightGreen', 'italic'),
+    'self': format('lightGray', 'italic'),
+    'numbers': format('lightBrown'),
 }
 
 

@@ -154,7 +154,7 @@ class code_gen():
         # Ask the user for a directory to save the generated code
         folder_path = QFileDialog.getExistingDirectory(None, "Select Folder")
 
-        if language.lower() == "html/css/js":
+        if language.lower() == "html":
             # Create separate files for HTML, CSS, and JS
             html_file_path = f"{folder_path}/index.html"
             css_file_path = f"{folder_path}/styles.css"
