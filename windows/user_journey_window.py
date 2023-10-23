@@ -14,7 +14,6 @@ class UserJourneyWindow(QMainWindow):
         self.init_ui()
         self.code_editor = None  # Add this line
 
-
     def init_ui(self):
         self.central_widget = QWidget()  # Create a central widget
         self.setCentralWidget(self.central_widget)  # Set the central widget
@@ -44,9 +43,6 @@ class UserJourneyWindow(QMainWindow):
             self.skill_level_group.addButton(btn, i)
             skill_level_layout.addWidget(btn)
         self.layout.addLayout(skill_level_layout)
-
-
-        
 
         self.submit_button = QPushButton("Submit")
         self.submit_button.clicked.connect(self.submit)

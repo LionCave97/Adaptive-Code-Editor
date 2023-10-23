@@ -14,13 +14,13 @@ from highlighter.htmlhighlighter import HTMLHighlighter
 
 from code_gen.code_gen import code_gen
 
-def get_gpt_response(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-003",  # Choose an appropriate engine
-        prompt=prompt,
-        max_tokens=8000  # Adjust as needed
-    )
-    return response.choices[0].text.strip()
+# def get_gpt_response(prompt):
+#     response = openai.Completion.create(
+#         engine="gpt-4-32k",  # Choose an appropriate engine
+#         prompt=prompt,
+#         max_tokens=32768  # Adjust as needed
+#     )
+#     return response.choices[0].text.strip()
 
 class CodeEditor(QMainWindow):
 
@@ -161,6 +161,8 @@ class CodeEditor(QMainWindow):
         templates_menu.addAction(advanced_template_action)
 
 
+
+
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
 
@@ -198,6 +200,12 @@ class CodeEditor(QMainWindow):
         self.layout.addWidget(self.code_editor)
 
         self.central_widget.setLayout(self.layout)
+
+        # Get started message in terminal.
+        self.terminal_widget.append("Hello, this is your terminal area. You can use this to chat with a assistant.")
+
+        self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
+
 
     def load_beginner_template(self):
         # Load the beginner template into the code editor
@@ -263,23 +271,33 @@ class CodeEditor(QMainWindow):
 
 
     def stream_gpt_response(self, prompt):
-        response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=100,
-        stream=True
-    )
-        concatenated_text = ""
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=6000,
+            stream=True
+        )
+        self.terminal_widget.append("")
+
         for chunk in response:
-            print(chunk.choices[0].text)
-            if isinstance(chunk, dict) and 'text' in chunk.choices[0]:
-                concatenated_text += chunk.choices[0].text
-                self.terminal_widget.setPlainText(concatenated_text)
+            try:
+                print(chunk['choices'][0]['delta']['content'])
+                self.terminal_widget.insertPlainText(chunk['choices'][0]['delta']['content'])
+                QApplication.processEvents()
+            except:
+                print("An error occurred while streaming the GPT response.")
+                pass
 
 
 
     def execute_command(self):
+        print("test")
         command = self.terminal_input.text()
+        self.terminal_widget.append(f"> {command}")
+        self.terminal_input.clear()
 
         if command.startswith("gpt:"):
             gpt_input = command[len("gpt:"):]
@@ -288,11 +306,13 @@ class CodeEditor(QMainWindow):
         elif command.startswith("code:"):
             gpt_input = command[len("code:"):]
             self.generate_code(gpt_input)
+        elif command.startswith("/help"):
+            self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
         else:
             self.terminal_widget.append(f"> {command}")
             # You can implement command execution here and append the output to the terminal
 
-        self.terminal_input.clear()
+        
 
     def generate_code(self, gpt_input):
         # print("Prompt Input", self.codePromptInput.toPlainText())
