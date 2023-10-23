@@ -29,7 +29,7 @@ add_prompt = None
 
 # LLM Chains definition
 # Create an OpenAI LLM model
-open_ai_llm = OpenAI(temperature=0.7, max_tokens=1000)
+open_ai_llm = OpenAI(temperature=0.7, max_tokens=6000, model_name="gpt-4")
 
 
 # Memory for the conversation
@@ -136,13 +136,10 @@ class code_gen():
             logger.error(f"Error in code generation: {traceback.format_exc()}")
         
 
-    def generate_new_code(project_goals, language, project_scope, skill_level):
-        # Initialize the LangChain model
-        open_ai_llm = OpenAI(temperature=0.7, max_tokens=1000)
-        memory = ConversationBufferMemory(input_key='project_goals', memory_key='chat_history')
-
+    def generate_new_code(project_goals, language):
+     
         # Create a prompt that describes the code you want to generate
-        prompt = f"Create a {language} project with the following goals: {project_goals}. The project should have a scope of {project_scope} and be suitable for a skill level of {skill_level}. You need to write the base code needed for this project."
+        prompt = f"Create a {language} project with the following goals: {project_goals}. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
 
         # Create a PromptTemplate and LLMChain
         code_template = PromptTemplate(input_variables=[], template=prompt)
@@ -167,7 +164,7 @@ class code_gen():
             with open(js_file_path, 'w') as file:
                 file.write("// Add your JavaScript here")
 
-            return [html_file_path, css_file_path, js_file_path]
+            return html_file_path
         else:
             # Save the generated code to a file in the selected directory
             file_path = f"{folder_path}/main.py"

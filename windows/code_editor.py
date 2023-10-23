@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtCore import QProcess
 
 import sys
@@ -22,6 +22,17 @@ from code_gen.code_gen import code_gen
 #     )
 #     return response.choices[0].text.strip()
 
+class LineNumberArea(QWidget):
+    def __init__(self, editor):
+        super().__init__(editor)
+        self.codeEditor = editor
+
+    def sizeHint(self):
+        return QSize(self.editor.lineNumberAreaWidth(), 0)
+
+    def paintEvent(self, event):
+        self.codeEditor.lineNumberAreaPaintEvent(event)
+
 class CodeEditor(QMainWindow):
 
     def __init__(self, user_journey_window, file_path=None):
@@ -35,6 +46,10 @@ class CodeEditor(QMainWindow):
         
         # Open the file and set its content to the code editor
         if file_path is not None:
+            if isinstance(file_path, list):
+                # Open a file dialog if file_path is a list
+                file_path = QFileDialog.getOpenFileName(self, "Open File", file_path[0])[0]
+                self.populate_file_tree(file_path)
             with open(file_path, 'r') as file:
                 self.code_editor.setPlainText(file.read())
 
@@ -180,6 +195,7 @@ class CodeEditor(QMainWindow):
         self.terminal_widget = QTextEdit()
         self.terminal_widget.setReadOnly(True)
         self.terminal_input = QLineEdit()
+        self.terminal_input.setPlaceholderText("Enter your command here... And press 'Enter'")
         self.terminal_input.returnPressed.connect(self.execute_command)
 
         self.terminal_layout = QVBoxLayout()
@@ -260,13 +276,14 @@ class CodeEditor(QMainWindow):
 
     def toggle_theme(self):
         self.is_dark_theme = not self.is_dark_theme
+        print("toggle theme")
         if self.is_dark_theme:
-            # self.setStyleSheet("background-color: #222; color: #FFF;")
-            # self.set_dark_theme()
+            print("dark")
             QApplication.instance().setStyle("Fusion")
 
         else:
             # self.setStyleSheet("background-color: #FFF; color: #000;")
+            print("light")
             QApplication.instance().setStyle("Breeze")
 
 
@@ -299,30 +316,21 @@ class CodeEditor(QMainWindow):
         self.terminal_widget.append(f"> {command}")
         self.terminal_input.clear()
 
-        if command.startswith("gpt:"):
-            gpt_input = command[len("gpt:"):]
-            self.stream_gpt_response(gpt_input)
-
-        elif command.startswith("code:"):
+        if command.startswith("code:"):
             gpt_input = command[len("code:"):]
             self.generate_code(gpt_input)
-        elif command.startswith("/help"):
+        elif command.startswith("help"):
             self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
         else:
-            self.terminal_widget.append(f"> {command}")
-            # You can implement command execution here and append the output to the terminal
-
-        
+            self.stream_gpt_response(command)
+        # You can implement command execution here and append the output to the terminal
 
     def generate_code(self, gpt_input):
         # print("Prompt Input", self.codePromptInput.toPlainText())
         QApplication.processEvents()
         code = code_gen.generate_code(gpt_input, "html")
         self.terminal_widget.append(code)
-        # print(code)
-        # self.editor.setPlainText(code)
        
-
     def add_code(self):
         # print("Prompt Input", self.codePromptInput.toPlainText())
         QApplication.processEvents()

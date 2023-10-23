@@ -34,15 +34,15 @@ class UserJourneyWindow(QMainWindow):
             language_layout.addWidget(btn)
         self.layout.addLayout(language_layout)
 
-        self.layout.addWidget(QLabel("What is your skill level?"))
-        self.skill_level_group = QButtonGroup()
-        self.skill_levels = ["Beginner", "Intermediate", "Expert"]
-        skill_level_layout = QHBoxLayout()
-        for i, skill_level in enumerate(self.skill_levels):
-            btn = QRadioButton(skill_level)
-            self.skill_level_group.addButton(btn, i)
-            skill_level_layout.addWidget(btn)
-        self.layout.addLayout(skill_level_layout)
+        # self.layout.addWidget(QLabel("What is your skill level?"))
+        # self.skill_level_group = QButtonGroup()
+        # self.skill_levels = ["Beginner", "Intermediate", "Expert"]
+        # skill_level_layout = QHBoxLayout()
+        # for i, skill_level in enumerate(self.skill_levels):
+        #     btn = QRadioButton(skill_level)
+        #     self.skill_level_group.addButton(btn, i)
+        #     skill_level_layout.addWidget(btn)
+        # self.layout.addLayout(skill_level_layout)
 
         self.submit_button = QPushButton("Submit")
         self.submit_button.clicked.connect(self.submit)
@@ -80,10 +80,10 @@ class UserJourneyWindow(QMainWindow):
         project_goals = self.project_goals_input.text()
         language_id = self.language_group.checkedId()
         language = self.languages[language_id]
-        project_scope = self.project_goals_input.text()
-        skill_level = self.skill_level_group.checkedId()
+        # project_scope = self.project_goals_input.text()
+        # skill_level = self.skill_level_group.checkedId()
 
-        if not project_goals or language_id == -1 or skill_level == -1:
+        if not project_goals or language_id == -1:
             QMessageBox.warning(self, "Missing Data", "Please fill in all fields.")
             return
         
@@ -94,7 +94,7 @@ class UserJourneyWindow(QMainWindow):
 
         QApplication.processEvents()  # Add this line
 
-        generated_code_path = code_gen.generate_new_code(project_goals, language, project_scope, skill_level)
+        generated_code_path = code_gen.generate_new_code(project_goals, language)
 
         progress.close()
 
