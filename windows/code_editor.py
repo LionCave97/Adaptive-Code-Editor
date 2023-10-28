@@ -14,25 +14,6 @@ from highlighter.htmlhighlighter import HTMLHighlighter
 
 from code_gen.code_gen import code_gen
 
-# def get_gpt_response(prompt):
-#     response = openai.Completion.create(
-#         engine="gpt-4-32k",  # Choose an appropriate engine
-#         prompt=prompt,
-#         max_tokens=32768  # Adjust as needed
-#     )
-#     return response.choices[0].text.strip()
-
-class LineNumberArea(QWidget):
-    def __init__(self, editor):
-        super().__init__(editor)
-        self.codeEditor = editor
-
-    def sizeHint(self):
-        return QSize(self.editor.lineNumberAreaWidth(), 0)
-
-    def paintEvent(self, event):
-        self.codeEditor.lineNumberAreaPaintEvent(event)
-
 class CodeEditor(QMainWindow):
 
     def __init__(self, user_journey_window, file_path=None):
@@ -212,6 +193,7 @@ class CodeEditor(QMainWindow):
         self.code_editor = QPlainTextEdit()
         highlighter = HTMLHighlighter(self.code_editor.document())
         highlighter = PythonHighlighter(self.code_editor.document())
+        self.code_editor.textChanged.connect(self.save_file)
 
         self.layout.addWidget(self.code_editor)
 

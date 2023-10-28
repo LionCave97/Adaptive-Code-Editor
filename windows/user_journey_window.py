@@ -92,7 +92,7 @@ class UserJourneyWindow(QMainWindow):
         progress.setMaximum(0)  # Add this line
         progress.show()
 
-        QApplication.processEvents()  # Add this line
+        QApplication.processEvents() 
 
         generated_code_path = code_gen.generate_new_code(project_goals, language)
 

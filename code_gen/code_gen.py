@@ -9,10 +9,9 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, SequentialChain, SimpleSequentialChain
 from langchain.memory import ConversationBufferMemory
 import langchain.agents as lc_agents
-from langchain.llms import OpenAI
 import logging
 from datetime import datetime
-from langchain.llms import OpenAI as LangChainOpenAI
+
 import openai
 
 from pydantic import BaseModel
@@ -137,7 +136,10 @@ class code_gen():
         
 
     def generate_new_code(project_goals, language):
-     
+
+        open_ai_llm = OpenAI(temperature=0.7, max_tokens=4000)
+        memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
+
         # Create a prompt that describes the code you want to generate
         prompt = f"Create a {language} project with the following goals: {project_goals}. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
 
@@ -146,7 +148,7 @@ class code_gen():
         code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
 
         # Generate the code
-        generated_code = code_chain.run({'project_goals': project_goals})  # Pass a dictionary to the run method
+        generated_code = code_chain.run({'code_topic': project_goals})  # Pass a dictionary to the run method
 
         # Ask the user for a directory to save the generated code
         folder_path = QFileDialog.getExistingDirectory(None, "Select Folder")
