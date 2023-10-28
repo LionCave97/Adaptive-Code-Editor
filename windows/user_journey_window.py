@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QMessageBox, QProgressDialog, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QPushButton, QRadioButton, QButtonGroup, QLabel
 from PySide6.QtCore import Qt, Signal
-
+import os
 from windows.code_editor import CodeEditor
 from code_gen.code_gen import code_gen
 
@@ -97,13 +97,14 @@ class UserJourneyWindow(QMainWindow):
         generated_code_path = code_gen.generate_new_code(project_goals, language)
 
         progress.close()
+        print(generated_code_path)
 
-        if isinstance(generated_code_path, list):
-            # If multiple files are generated, open the first one by default
-            self.code_editor = CodeEditor(self, generated_code_path[0])
-        else:
-            self.code_editor = CodeEditor(self, generated_code_path)
 
+        # if isinstance(generated_code_path, list):
+        #     # If multiple files are generated, open the first one by default
+        #     self.code_editor = CodeEditor(self, generated_code_path[0])
+        # else:
+        #     self.code_editor = CodeEditor(self, generated_code_path)
 
         # Create an instance of the CodeEditor class and pass the path of the generated code
         self.code_editor = CodeEditor(self, generated_code_path)

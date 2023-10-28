@@ -1,9 +1,10 @@
+import pyperclip
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtCore import QProcess
 
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QVBoxLayout, QWidget, QDockWidget, QTreeView, QTextEdit, QLineEdit, QFileDialog, QMenuBar, QPushButton, QFileSystemModel
+from PySide6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QDockWidget, QTreeView, QFileDialog, QMenuBar, QPushButton, QFileSystemModel
 from PySide6.QtGui import QPalette, QColor, QAction
 from PySide6.QtCore import Qt, QDir
 
@@ -16,7 +17,7 @@ from code_gen.code_gen import code_gen
 
 class CodeEditor(QMainWindow):
 
-    def __init__(self, user_journey_window, file_path=None):
+    def __init__(self, user_journey_window, folder_path=None):
         super().__init__()
 
         self.user_journey_window = user_journey_window
@@ -26,13 +27,8 @@ class CodeEditor(QMainWindow):
         self.init_ui()
         
         # Open the file and set its content to the code editor
-        if file_path is not None:
-            if isinstance(file_path, list):
-                # Open a file dialog if file_path is a list
-                file_path = QFileDialog.getOpenFileName(self, "Open File", file_path[0])[0]
-                self.populate_file_tree(file_path)
-            with open(file_path, 'r') as file:
-                self.code_editor.setPlainText(file.read())
+        if folder_path is not None:
+            self.populate_file_tree(folder_path)
 
         
 
@@ -269,12 +265,52 @@ class CodeEditor(QMainWindow):
             QApplication.instance().setStyle("Breeze")
 
 
-    def stream_gpt_response(self, prompt):
+    def gpt_response(self, prompt):
+        # Get the currently selected file
+        selected_index = self.file_tree.currentIndex()
+        selected_file = self.file_tree.model().filePath(selected_index)
+        self.terminal_widget.append("Please wait. I am generating the code")
+
+        # Read the contents of the file
+        with open(selected_file, 'r') as file:
+            file_contents = file.read()
+
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a coding assistant, that only returns code no extra text allowed."},
+                {"role": "user", "content": prompt + file_contents}
+            ],
+            max_tokens=6000,
+            stream=False
+        )
+        print(response['choices'][0]['message']['content'])
+        self.terminal_widget.append(response['choices'][0]['message']['content'])
+
+
+        msg_box = QMessageBox()
+        msg_box.setText("Do you want to copy the generated code to the clipboard?")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        result = msg_box.exec()
+
+        # If the user clicked 'Yes', copy the generated code to the clipboard
+        if result == QMessageBox.Yes:
+            pyperclip.copy(response['choices'][0]['message']['content'])
+
+    def stream_gpt_response(self, prompt):
+        # Get the currently selected file
+        selected_index = self.file_tree.currentIndex()
+        selected_file = self.file_tree.model().filePath(selected_index)
+
+        # Read the contents of the file
+        with open(selected_file, 'r') as file:
+            file_contents = file.read()
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a coding assistant."},
+                {"role": "user", "content": prompt + file_contents}
             ],
             max_tokens=6000,
             stream=True
@@ -283,33 +319,30 @@ class CodeEditor(QMainWindow):
 
         for chunk in response:
             try:
-                print(chunk['choices'][0]['delta']['content'])
+                chunk_content =chunk['choices'][0]['delta']['content']
                 self.terminal_widget.insertPlainText(chunk['choices'][0]['delta']['content'])
                 QApplication.processEvents()
+
             except:
                 print("An error occurred while streaming the GPT response.")
                 pass
 
 
 
+
     def execute_command(self):
-        print("test")
         command = self.terminal_input.text()
         self.terminal_widget.append(f"> {command}")
         self.terminal_input.clear()
 
-        if command.startswith("code:"):
-            gpt_input = command[len("code:"):]
-            self.generate_code(gpt_input)
-        
-        elif command.startswith("ask:"):
+        if command.startswith("ask:"):
             gpt_input = command[len("ask:"):]
-            self.add_code(gpt_input)
-
+            self.gpt_response(command)
+            
         elif command.startswith("help"):
             self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
         else:
-            self.stream_gpt_response(command)
+            self.add_code(command)
         # You can implement command execution here and append the output to the terminal
 
     def generate_code(self, gpt_input):
@@ -321,6 +354,24 @@ class CodeEditor(QMainWindow):
     def add_code(self, gpt_input):
         # print("Prompt Input", self.codePromptInput.toPlainText())
         QApplication.processEvents()
-        code = code_gen.code(gpt_input)
-        print(code)
-        return code
+
+        # Get the currently selected file
+        selected_index = self.file_tree.currentIndex()
+        selected_file = self.file_tree.model().filePath(selected_index)
+
+        # Read the contents of the file
+        with open(selected_file, 'r') as file:
+            file_contents = file.read()
+
+        # Pass the contents of the file to the code function
+        code = code_gen.code(gpt_input, file_contents)
+        self.terminal_widget.append(code)
+        # Ask the user if they want to copy the generated code to the clipboard
+        msg_box = QMessageBox()
+        msg_box.setText("Do you want to copy the generated code to the clipboard?")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        result = msg_box.exec()
+
+        # If the user clicked 'Yes', copy the generated code to the clipboard
+        if result == QMessageBox.Yes:
+            pyperclip.copy(code)

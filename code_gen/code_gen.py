@@ -35,8 +35,8 @@ add_prompt = None
 
 # LLM Chains definition
 # Create an OpenAI LLM model
-open_ai_llm = OpenAI(temperature=0.7, max_tokens=6000, model_name="gpt-4")
 
+open_ai_llm = OpenAI(temperature=0.7, max_tokens=3500)
 
 # Memory for the conversation
 memory = ConversationBufferMemory(
@@ -87,7 +87,6 @@ class code_gen():
             print("Add Prompt ", add)
             code_template = PromptTemplate(input_variables=['add_prompt', 'code_language', 'code_prompt'], template=r'Take the existing code "{add_prompt}" written in {code_language} and add the following {code_prompt}')
 
-
             code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
             # print("Prompt", code_prompt)
             # print("add Prompt", add_prompt)
@@ -118,10 +117,6 @@ class code_gen():
             
             logger.error(f"Error in code generation: {traceback.format_exc()}")
 
-
-
-   
-
     def improve_code(prompt, advice):
         logger = logging.getLogger(__name__)
         try:
@@ -137,14 +132,20 @@ class code_gen():
             
             logger.error(f"Error in code generation: {traceback.format_exc()}")
 
-    def code(prompt):
-        llm = ChatOpenAI(model='gpt-4',temperature=0)
-        memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
+    def code(input, code):
+        print("")
+        prompt = f"This is my current code: {code}. {input}"
+
+        # Create a PromptTemplate and LLMChain
+        code_template = PromptTemplate(input_variables=[], template=prompt)
+        code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
+
+        # Generate the code
+        generated_code = code_chain.run({'code_topic': prompt})
+        print(generated_code)
+        return generated_code
 
     def generate_new_code(project_goals, language):
-        open_ai_llm = OpenAI(temperature=0.7, max_tokens=3500)
-        # memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
-        
         # Define file types for different languages
         file_types = {
             "html": ["index.html", "styles.css", "script.js"],
@@ -163,20 +164,32 @@ class code_gen():
             with open(file_path, 'w') as f:
                 if file.endswith(".html"):
                     # Create a prompt that describes the code you want to generate
-                    prompt = f"Create a {language} project with the following goals: {project_goals}. it needs to follow this code structure as it needs to use the css and js file: '<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n<script src='script.js'></script>\n</body>\n</html>'. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
+                    prompt = f"Create a {language} project with the following goals: {project_goals}. it needs to follow this code structure as it needs to use the css and js file: '<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n<script src='script.js'></script>\n</body>\n</html>'. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project. Return the code segments with the identifiers 'html:' for the html code, 'css:' for the css code and 'js:' for the js code"
 
                     # Create a PromptTemplate and LLMChain
                     code_template = PromptTemplate(input_variables=[], template=prompt)
                     code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
 
                     # Generate the code
-                    generated_code = code_chain.run({'code_topic': project_goals})  # Pass a dictionary to the run method
-                    f.write(generated_code)
+                    generated_code = code_chain.run({'code_topic': project_goals})
+                    print(generated_code)
+                    # Split the generated code into HTML, CSS, and JS parts
+                    html_code, rest = generated_code.split('css:', 1)
+                    css_code, js_code = rest.split('js:', 1)
+
+                    # Remove the 'html:' identifier from the HTML code
+                    html_code = html_code.replace('html:', '').strip()
+
+                    # Write the HTML code to the HTML file
+                    f.write(html_code)
 
                 elif file.endswith(".css"):
-                    f.write("/* Add your CSS here */")
+                    # Write the CSS code to the CSS file
+                    f.write(css_code.strip())
+
                 elif file.endswith(".js"):
-                    f.write("// Add your JavaScript here")
+                    # Write the JS code to the JS file
+                    f.write(js_code.strip())
 
                 else:
                     # Create a prompt that describes the code you want to generate
@@ -191,4 +204,4 @@ class code_gen():
 
                     f.write(generated_code)
 
-        return [f"{folder_path}/{file}" for file in files]
+        return folder_path
