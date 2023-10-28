@@ -301,6 +301,11 @@ class CodeEditor(QMainWindow):
         if command.startswith("code:"):
             gpt_input = command[len("code:"):]
             self.generate_code(gpt_input)
+        
+        elif command.startswith("ask:"):
+            gpt_input = command[len("ask:"):]
+            self.add_code(gpt_input)
+
         elif command.startswith("help"):
             self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
         else:
@@ -313,9 +318,9 @@ class CodeEditor(QMainWindow):
         code = code_gen.generate_code(gpt_input, "html")
         self.terminal_widget.append(code)
        
-    def add_code(self):
+    def add_code(self, gpt_input):
         # print("Prompt Input", self.codePromptInput.toPlainText())
         QApplication.processEvents()
-        code = code_gen.add_code(self.codePromptInput.toPlainText(),self.editor.toPlainText(),  "html")
+        code = code_gen.code(gpt_input)
         print(code)
         return code

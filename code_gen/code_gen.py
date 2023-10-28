@@ -9,6 +9,13 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, SequentialChain, SimpleSequentialChain
 from langchain.memory import ConversationBufferMemory
 import langchain.agents as lc_agents
+
+
+from langchain.agents import load_tools
+from langchain.agents import initialize_agent
+from langchain.chat_models import ChatOpenAI
+
+
 import logging
 from datetime import datetime
 
@@ -100,24 +107,20 @@ class code_gen():
     def what_code(prompt):
         logger = logging.getLogger(__name__)
         try:
-            # print("Chain", code_chain)
-            # Prompt Templates
             print("Add Prompt ", add_prompt)
             code_template = PromptTemplate(input_variables=['code_topic'], template= 'what does this code do {code_topic} and in what language is it written?')
             code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
-            # print("Prompt", code_prompt)
-            # print("add Prompt", add_prompt)
-
-            # print("Language", code_language)
-
             whatCode = code_chain.run(code_prompt)
             codeLanguage = code_language
-            # print(generatedCode)
             return(whatCode)
 
         except Exception as e:
             
             logger.error(f"Error in code generation: {traceback.format_exc()}")
+
+
+
+   
 
     def improve_code(prompt, advice):
         logger = logging.getLogger(__name__)
@@ -133,44 +136,59 @@ class code_gen():
         except Exception as e:
             
             logger.error(f"Error in code generation: {traceback.format_exc()}")
-        
 
-    def generate_new_code(project_goals, language):
-
-        open_ai_llm = OpenAI(temperature=0.7, max_tokens=4000)
+    def code(prompt):
+        llm = ChatOpenAI(model='gpt-4',temperature=0)
         memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
 
-        # Create a prompt that describes the code you want to generate
-        prompt = f"Create a {language} project with the following goals: {project_goals}. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
+    def generate_new_code(project_goals, language):
+        open_ai_llm = OpenAI(temperature=0.7, max_tokens=3500)
+        # memory = ConversationBufferMemory(input_key='code_topic', memory_key='chat_history')
+        
+        # Define file types for different languages
+        file_types = {
+            "html": ["index.html", "styles.css", "script.js"],
+            "python": ["main.py"]
+        }
 
-        # Create a PromptTemplate and LLMChain
-        code_template = PromptTemplate(input_variables=[], template=prompt)
-        code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
+        # Get the file types for the specified language
+        files = file_types.get(language.lower(), ["main.txt"])
 
-        # Generate the code
-        generated_code = code_chain.run({'code_topic': project_goals})  # Pass a dictionary to the run method
-
-        # Ask the user for a directory to save the generated code
+         # Ask the user for a directory to save the generated code
         folder_path = QFileDialog.getExistingDirectory(None, "Select Folder")
 
-        if language.lower() == "html":
-            # Create separate files for HTML, CSS, and JS
-            html_file_path = f"{folder_path}/index.html"
-            css_file_path = f"{folder_path}/styles.css"
-            js_file_path = f"{folder_path}/script.js"
+        # Create and write to the files
+        for file in files:
+            file_path = f"{folder_path}/{file}"
+            with open(file_path, 'w') as f:
+                if file.endswith(".html"):
+                    # Create a prompt that describes the code you want to generate
+                    prompt = f"Create a {language} project with the following goals: {project_goals}. it needs to follow this code structure as it needs to use the css and js file: '<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n<script src='script.js'></script>\n</body>\n</html>'. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
 
-            with open(html_file_path, 'w') as file:
-                file.write("<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n<script src='script.js'></script>\n</body>\n</html>")
-            with open(css_file_path, 'w') as file:
-                file.write("/* Add your CSS here */")
-            with open(js_file_path, 'w') as file:
-                file.write("// Add your JavaScript here")
+                    # Create a PromptTemplate and LLMChain
+                    code_template = PromptTemplate(input_variables=[], template=prompt)
+                    code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
 
-            return html_file_path
-        else:
-            # Save the generated code to a file in the selected directory
-            file_path = f"{folder_path}/main.py"
-            with open(file_path, 'w') as file:
-                file.write(generated_code)
+                    # Generate the code
+                    generated_code = code_chain.run({'code_topic': project_goals})  # Pass a dictionary to the run method
+                    f.write(generated_code)
 
-            return file_path
+                elif file.endswith(".css"):
+                    f.write("/* Add your CSS here */")
+                elif file.endswith(".js"):
+                    f.write("// Add your JavaScript here")
+
+                else:
+                    # Create a prompt that describes the code you want to generate
+                    prompt = f"Create a {language} project with the following goals: {project_goals}. You need to write the base code needed for this project with relevant comments needed. Please add extra code as needed to make this a fully functional project."
+
+                    # Create a PromptTemplate and LLMChain
+                    code_template = PromptTemplate(input_variables=[], template=prompt)
+                    code_chain = LLMChain(llm=open_ai_llm, prompt=code_template, output_key='code', memory=memory, verbose=True)
+
+                    # Generate the code
+                    generated_code = code_chain.run({'code_topic': project_goals})  # Pass a dictionary to the run method
+
+                    f.write(generated_code)
+
+        return [f"{folder_path}/{file}" for file in files]
