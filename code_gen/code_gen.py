@@ -3,6 +3,7 @@ import subprocess
 import traceback
 import sys
 import os
+import re
 from io import StringIO
 from langchain.llms import OpenAI
 from langchain.prompts import PromptTemplate
@@ -36,7 +37,7 @@ add_prompt = None
 # LLM Chains definition
 # Create an OpenAI LLM model
 
-open_ai_llm = OpenAI(temperature=0.7, max_tokens=3500)
+open_ai_llm = OpenAI(temperature=0.5, max_tokens=3500)
 
 # Memory for the conversation
 memory = ConversationBufferMemory(
@@ -174,11 +175,11 @@ class code_gen():
                     generated_code = code_chain.run({'code_topic': project_goals})
                     print(generated_code)
                     # Split the generated code into HTML, CSS, and JS parts
-                    html_code, rest = generated_code.split('css:', 1)
-                    css_code, js_code = rest.split('js:', 1)
+                    html_code, rest = re.split('(?i)css:', generated_code, 1)
+                    css_code, js_code = re.split('(?i)js:', rest, 1)
 
                     # Remove the 'html:' identifier from the HTML code
-                    html_code = html_code.replace('html:', '').strip()
+                    html_code = re.sub('(?i)html:', '', html_code).strip()
 
                     # Write the HTML code to the HTML file
                     f.write(html_code)

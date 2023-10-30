@@ -6,9 +6,10 @@ from windows.user_journey_window import UserJourneyWindow
 
 def main():
     app = QApplication(sys.argv)
-    app.setStyle("Breeze")
-
     app.setStyle("Fusion")
+
+    # app.setStyle("GTK+")
+
     app.setWindowIcon(QIcon("./ACELogo.png"))
 
     user_journey_window = UserJourneyWindow()

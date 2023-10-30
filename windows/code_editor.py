@@ -5,6 +5,7 @@ from PySide6.QtCore import QProcess
 import os
 import sys
 import subprocess
+from git import Repo, InvalidGitRepositoryError
 from PySide6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QDockWidget, QTreeView, QFileDialog, QMenuBar, QPushButton, QFileSystemModel
 from PySide6.QtGui import QPalette, QColor, QAction
 from PySide6.QtCore import Qt, QDir
@@ -23,7 +24,9 @@ class CodeEditor(QMainWindow):
 
         self.user_journey_window = user_journey_window
 
-        self.is_dark_theme = False
+        self.is_dark_theme = True
+                
+       
 
         self.init_ui()
         
@@ -126,12 +129,26 @@ class CodeEditor(QMainWindow):
         open_folder_action.triggered.connect(self.open_folder)
         file_menu.addAction(open_folder_action)
 
+        new_file_action = QAction("New File", self)
+        new_file_action.triggered.connect(self.create_new_file)
+        file_menu.addAction(new_file_action)
+
         save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
 
+        # Add 'Restart' action
+        restart_action = QAction("Restart", self)
+        restart_action.triggered.connect(self.restart_app)
+        file_menu.addAction(restart_action)
+
+        # Add 'Close' action
+        close_action = QAction("Close", self)
+        close_action.triggered.connect(self.close)
+        file_menu.addAction(close_action)
+
         view_menu = menubar.addMenu("View")
-        toggle_theme_action = QAction("Toggle Dark Theme", self)
+        toggle_theme_action = QAction("Toggle Theme", self)
         toggle_theme_action.triggered.connect(self.toggle_theme)
         view_menu.addAction(toggle_theme_action)
 
@@ -145,16 +162,23 @@ class CodeEditor(QMainWindow):
         beginner_template_action.triggered.connect(self.load_beginner_template)
         templates_menu.addAction(beginner_template_action)
 
-        moderate_template_action = QAction("Moderate Template", self)
-        moderate_template_action.triggered.connect(self.load_moderate_template)
-        templates_menu.addAction(moderate_template_action)
+        # moderate_template_action = QAction("Moderate", self)
+        # moderate_template_action.triggered.connect(self.load_moderate_template)
+        # templates_menu.addAction(moderate_template_action)
 
-        advanced_template_action = QAction("Advanced Template", self)
+        advanced_template_action = QAction("Advanced", self)
         advanced_template_action.triggered.connect(self.load_advanced_template)
         templates_menu.addAction(advanced_template_action)
 
+        templates_menu = menubar.addMenu("Tools")
+
+        # Add 'Lint Code' action
+        lint_action = QAction("Lint Code", self)
+        lint_action.triggered.connect(self.lint_code)
+        templates_menu.addAction(lint_action)
 
 
+        
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -186,13 +210,31 @@ class CodeEditor(QMainWindow):
 
         self.addDockWidget(Qt.BottomDockWidgetArea, self.terminal)
 
+        self.git_widget = QDockWidget("Git", self)
+        self.git_status = QTextEdit()
+        self.git_status.setReadOnly(True)
+        self.git_widget.setWidget(self.git_status)
+        self.git_widget.hide()
+
+        
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.git_widget)
+
+        self.pylint_widget = QDockWidget("Debug", self)
+        self.pylint_output = QTextEdit()
+        self.pylint_output.setReadOnly(True)
+        self.pylint_widget.setWidget(self.pylint_output)
+        self.pylint_widget.hide()
+
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.pylint_widget)
+
+
         # Code Editor
+        
         self.code_editor = QPlainTextEdit()
         highlighter = HTMLHighlighter(self.code_editor.document())
         highlighter = PythonHighlighter(self.code_editor.document())
         self.code_editor.textChanged.connect(self.save_file)
 
-        
 
         self.layout.addWidget(self.code_editor)
 
@@ -201,14 +243,66 @@ class CodeEditor(QMainWindow):
         # Get started message in terminal.
         self.terminal_widget.append("Hello, this is your terminal area. You can use this to chat with a assistant.")
 
-        self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
+        self.terminal_widget.append("You can just type to ask questions and use 'code:' to generate and debug code. You can also use 'help' for basic commands.")
 
         self.open_terminal_button = QPushButton("Run Code", self)
         self.open_terminal_button.clicked.connect(self.open_terminal_at_path)
         self.layout.addWidget(self.open_terminal_button)
         self.open_terminal_button.hide()
 
+       
+        # ...
         self.process = None
+
+        self.dockable_widgets = {
+            "File Navigation": self.file_nav,
+            "Terminal": self.terminal,
+            "Git": self.git_widget,
+            "Linter": self.pylint_widget,            
+        }
+        
+        def create_toggle_action(widget):
+            return lambda checked: widget.setVisible(checked)
+
+        dockable_menu = menubar.addMenu("Panels")
+        for name, widget in self.dockable_widgets.items():
+            action = QAction(name, self)
+            action.setCheckable(True)
+            action.setChecked(True)
+            action.triggered.connect(create_toggle_action(widget))
+            dockable_menu.addAction(action)
+
+    def update_git_status(self):
+        try:
+            repo = Repo(self.project_directory)
+            self.git_status.setText(repo.git.status())
+        except InvalidGitRepositoryError:
+            self.git_status.setText("Not a Git repository")
+
+    
+    def lint_code(self):
+        # Get the currently selected file
+        selected_index = self.file_tree.currentIndex()
+        selected_file = self.file_tree.model().filePath(selected_index)
+        self.pylint_output.setText("")
+        # Run pylint on the file
+        try:
+            result = subprocess.run(['python', '-m', 'pylint', selected_file], capture_output=True, text=True)
+            # Display the results in the terminal
+            self.pylint_output.append(result.stdout)
+        except FileNotFoundError:
+            self.pylint_output.append("pylint is not installed or not found in PATH")
+
+    def create_new_file(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "New File", "", "All Files (*)")
+        if file_path:
+            with open(file_path, 'w') as file:
+                pass  # Create an empty file
+            self.populate_file_tree(os.path.dirname(file_path))
+
+    def restart_app(self):
+        QApplication.quit()
+        subprocess.run([sys.executable] + sys.argv, cwd=sys.path[0])
 
     def open_terminal_at_path(self):
     # If a process is already running, terminate it
@@ -234,16 +328,29 @@ class CodeEditor(QMainWindow):
 
     def load_beginner_template(self):
         # Load the beginner template into the code editor
-        self.code_editor.setPlainText("Beginner template code...")
-        self.file_nav.hide()
+        # self.code_editor.setPlainText("Beginner workspace...")
+        self.file_nav.show()  # Show the file navigation
+        self.git_widget.hide()
+        self.pylint_widget.hide()
+
+
+        self.terminal.show()  # Show the terminal
+        # Hide any advanced features
+        for widget in self.dockable_widgets.values():
+            if widget not in [self.file_nav, self.terminal]:
+                widget.hide()
 
     def load_moderate_template(self):
         # Load the moderate template into the code editor
-        self.code_editor.setPlainText("Moderate template code...")
+        # self.code_editor.setPlainText("Moderate workspace...")
+        print("Moderate workspace...")
 
     def load_advanced_template(self):
         # Load the advanced template into the code editor
-        self.code_editor.setPlainText("Advanced template code...")
+        # self.code_editor.setPlainText("Advanced workspace...")
+        # Show all dockable widgets
+        for widget in self.dockable_widgets.values():
+            widget.show()
     
     def clear_terminal(self):
         self.terminal_widget.clear()
@@ -252,6 +359,11 @@ class CodeEditor(QMainWindow):
         folder_path = QFileDialog.getExistingDirectory(self, "Open Folder", "")
         if folder_path:
             self.populate_file_tree(folder_path)
+
+        # Set the project_directory attribute
+        self.project_directory = folder_path
+        self.update_git_status()
+        
 
     def populate_file_tree(self, folder_path):
         model = QFileSystemModel()
@@ -289,6 +401,9 @@ class CodeEditor(QMainWindow):
         with open(selected_file, 'w') as file:
             file.write(self.code_editor.toPlainText())
 
+        # Update Git status when file changes happen
+        self.update_git_status()
+
 
 
     def toggle_theme(self):
@@ -297,22 +412,11 @@ class CodeEditor(QMainWindow):
         if self.is_dark_theme:
             print("dark")
             QApplication.instance().setStyle("Fusion")
-
         else:
             # self.setStyleSheet("background-color: #FFF; color: #000;")
             print("light")
-            if "Breeze" in QApplication.instance().style().metaObject().className():
-                QApplication.instance().setStyle("Breeze")
-            else:
-                # If Breeze is not available, set the style to "Windows" or "Macintosh" or "GTK+"
-                if sys.platform.startswith('win'):
-                    QApplication.instance().setStyle("Windows")
-                elif sys.platform.startswith('darwin'):
-                    QApplication.instance().setStyle("Macintosh")
-                elif sys.platform.startswith('linux'):
-                    QApplication.instance().setStyle("GTK+")
-
-
+            QApplication.instance().setStyle("GTK+")
+            
     def gpt_response(self, prompt):
         # Get the currently selected file
         selected_index = self.file_tree.currentIndex()
@@ -375,20 +479,24 @@ class CodeEditor(QMainWindow):
                 pass
 
 
-
-
     def execute_command(self):
         command = self.terminal_input.text()
         self.terminal_widget.append(f"> {command}")
         self.terminal_input.clear()
 
-        if command.startswith("ask:"):
+        if command.startswith("code:"):
             self.terminal_widget.append("Please wait. I am generating the code")
             gpt_input = command[len("ask:"):]
             self.gpt_response(command)
             
         elif command.startswith("help"):
-            self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
+            self.terminal_widget.append("You can just type to ask questions.")
+            self.terminal_widget.append("Use 'code:' to generate and debug code.")
+            self.terminal_widget.append("Use 'clear:' to clear the terminal.")
+            self.terminal_widget.append(" You can also use 'help' for basic commands.")
+
+        elif command.startswith("clear"):
+            self.terminal_widget.setText("")
         else:
             self.stream_gpt_response(command)
         # You can implement command execution here and append the output to the terminal
