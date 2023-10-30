@@ -2,8 +2,9 @@ import pyperclip
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QPushButton
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtCore import QProcess
-
+import os
 import sys
+import subprocess
 from PySide6.QtWidgets import QApplication, QMessageBox, QPlainTextEdit, QDockWidget, QTreeView, QFileDialog, QMenuBar, QPushButton, QFileSystemModel
 from PySide6.QtGui import QPalette, QColor, QAction
 from PySide6.QtCore import Qt, QDir
@@ -138,9 +139,9 @@ class CodeEditor(QMainWindow):
         clear_terminal_action.triggered.connect(self.clear_terminal)
         view_menu.addAction(clear_terminal_action)
 
-        templates_menu = menubar.addMenu("Templates")
+        templates_menu = menubar.addMenu("Workspace")
 
-        beginner_template_action = QAction("Beginner Template", self)
+        beginner_template_action = QAction("Basic", self)
         beginner_template_action.triggered.connect(self.load_beginner_template)
         templates_menu.addAction(beginner_template_action)
 
@@ -191,6 +192,8 @@ class CodeEditor(QMainWindow):
         highlighter = PythonHighlighter(self.code_editor.document())
         self.code_editor.textChanged.connect(self.save_file)
 
+        
+
         self.layout.addWidget(self.code_editor)
 
         self.central_widget.setLayout(self.layout)
@@ -200,6 +203,34 @@ class CodeEditor(QMainWindow):
 
         self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
 
+        self.open_terminal_button = QPushButton("Run Code", self)
+        self.open_terminal_button.clicked.connect(self.open_terminal_at_path)
+        self.layout.addWidget(self.open_terminal_button)
+        self.open_terminal_button.hide()
+
+        self.process = None
+
+    def open_terminal_at_path(self):
+    # If a process is already running, terminate it
+        if self.process is not None:
+            self.process.kill()
+            self.process = None
+            self.open_terminal_button.setText("Open Terminal")
+            return
+
+        selected_index = self.file_tree.currentIndex()
+        selected_file = self.file_tree.model().filePath(selected_index)
+        directory = os.path.dirname(selected_file)
+        file_name = os.path.basename(selected_file)
+
+        if file_name.endswith('.py'):
+            self.process = subprocess.Popen('start cmd /k python {}'.format(file_name), cwd=directory, shell=True)
+        elif file_name.endswith('.html'):
+            self.process = subprocess.Popen('start cmd /k live-server', cwd=directory, shell=True)
+        else:
+            self.process = subprocess.Popen('start cmd', cwd=directory, shell=True)
+
+        self.open_terminal_button.setText("Stop Terminal")
 
     def load_beginner_template(self):
         # Load the beginner template into the code editor
@@ -230,6 +261,14 @@ class CodeEditor(QMainWindow):
 
     def open_selected_file(self, index):
         selected_file = self.file_tree.model().filePath(index)
+        file_extension = os.path.splitext(selected_file)[1]
+
+        # Show the button if the file is a .py or .html file
+        if file_extension in ['.py', '.html']:
+            self.open_terminal_button.show()
+        else:
+            self.open_terminal_button.hide()
+
         with open(selected_file, 'r') as file:
             self.code_editor.setPlainText(file.read())
 
@@ -262,14 +301,22 @@ class CodeEditor(QMainWindow):
         else:
             # self.setStyleSheet("background-color: #FFF; color: #000;")
             print("light")
-            QApplication.instance().setStyle("Breeze")
+            if "Breeze" in QApplication.instance().style().metaObject().className():
+                QApplication.instance().setStyle("Breeze")
+            else:
+                # If Breeze is not available, set the style to "Windows" or "Macintosh" or "GTK+"
+                if sys.platform.startswith('win'):
+                    QApplication.instance().setStyle("Windows")
+                elif sys.platform.startswith('darwin'):
+                    QApplication.instance().setStyle("Macintosh")
+                elif sys.platform.startswith('linux'):
+                    QApplication.instance().setStyle("GTK+")
 
 
     def gpt_response(self, prompt):
         # Get the currently selected file
         selected_index = self.file_tree.currentIndex()
         selected_file = self.file_tree.model().filePath(selected_index)
-        self.terminal_widget.append("Please wait. I am generating the code")
 
         # Read the contents of the file
         with open(selected_file, 'r') as file:
@@ -336,13 +383,14 @@ class CodeEditor(QMainWindow):
         self.terminal_input.clear()
 
         if command.startswith("ask:"):
+            self.terminal_widget.append("Please wait. I am generating the code")
             gpt_input = command[len("ask:"):]
             self.gpt_response(command)
             
         elif command.startswith("help"):
             self.terminal_widget.append("Use 'gpt:' to ask a question and use 'code:' to generate new code.")
         else:
-            self.add_code(command)
+            self.stream_gpt_response(command)
         # You can implement command execution here and append the output to the terminal
 
     def generate_code(self, gpt_input):

@@ -12,6 +12,7 @@ class UserJourneyWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_ui()
+        self.setWindowTitle("ACE - Generation")
         self.code_editor = None  # Add this line
 
     def init_ui(self):
@@ -21,7 +22,7 @@ class UserJourneyWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)  # Add the layout to the central widget
 
         self.project_goals_input = QLineEdit()
-        self.layout.addWidget(QLabel("What is the goal of the project?"))
+        self.layout.addWidget(QLabel("What will we be building today?"))
         self.layout.addWidget(self.project_goals_input)
 
         self.layout.addWidget(QLabel("What is the preferred method of development?"))
