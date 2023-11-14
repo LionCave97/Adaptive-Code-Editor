@@ -26,8 +26,8 @@ from pydantic import BaseModel
 
 from PySide6.QtWidgets import QFileDialog
 
-os.environ["OPENAI_API_KEY"] = "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"
-openai.api_key = "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"
+os.environ["OPENAI_API_KEY"] = "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"
+openai.api_key = "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"
 
 code_prompt = ""
 code_language = ""
