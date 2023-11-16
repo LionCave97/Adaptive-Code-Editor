@@ -1,8 +1,23 @@
-
 # Adaptive Code Editor (ACE)
 
-
 ACE is an intelligent code editor that leverages the power of OpenAI's GPT-4 model to assist you in your coding tasks. It provides a user-friendly interface for writing, debugging, and generating code.
+
+Setup
+
+To set up ACE, follow these steps:
+
+1. Ensure that Python is installed on your machine.
+2. Clone the ACE repository to your local machine.
+3. Install the required dependencies by running the following command in the root directory of the project:
+   `pip install -r requirements.txt`
+4. Set up the OpenAI API key by creating a `.env` file in the code_gen directory of the project and adding the following line:
+   `OPENAI_API_KEY=<your_api_key>`
+
+   Replace `<your_api_key>` with your actual OpenAI API key.
+5. Start ACE by running the `code_editor.py` script:
+   `python code_editor.py`
+
+That's it! ACE is now set up and ready to use. Enjoy coding with the power of OpenAI's GPT-4 model!
 
 ### Features
 
@@ -29,14 +44,6 @@ ACE provides a file navigation panel that allows you to easily navigate through 
 #### Git Integration
 
 ACE can display the status of your Git repository, allowing you to keep track of your changes and commits.
-
-### Installation
-
-To install ACE, you need to have Python installed on your machine. You can then install the required dependencies by running the following command in the root directory of the project:
-
-`pip install -r requirements.txt`
-
-The dependencies include several Python libraries such as PySide6 for the GUI, openai for the GPT-4 model, and pyperclip for clipboard operations.
 
 ### Usage
 

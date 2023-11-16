@@ -10,24 +10,20 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, SequentialChain, SimpleSequentialChain
 from langchain.memory import ConversationBufferMemory
 import langchain.agents as lc_agents
-
+from dotenv import load_dotenv
 
 from langchain.agents import load_tools
 from langchain.agents import initialize_agent
 from langchain.chat_models import ChatOpenAI
 
-
 import logging
 from datetime import datetime
-
 import openai
-
 from pydantic import BaseModel
-
 from PySide6.QtWidgets import QFileDialog
 
-os.environ["OPENAI_API_KEY"] = "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"
-openai.api_key = "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"
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 code_prompt = ""
 code_language = ""
